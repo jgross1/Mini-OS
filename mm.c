@@ -374,7 +374,7 @@ void init_mm(void)
 
     arch_init_p2m(max_pfn);
     
-    arch_init_demand_mapping_area(max_pfn);
+    arch_init_demand_mapping_area();
 }
 
 void fini_mm(void)
