@@ -38,6 +38,7 @@
 #include <mini-os/hypervisor.h>
 #include <xen/memory.h>
 #include <mini-os/mm.h>
+#include <mini-os/balloon.h>
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
@@ -353,7 +354,6 @@ void *sbrk(ptrdiff_t increment)
 #endif
 
 
-
 void init_mm(void)
 {
 
@@ -361,6 +361,7 @@ void init_mm(void)
 
     printk("MM: Init\n");
 
+    get_max_pages();
     arch_init_mm(&start_pfn, &max_pfn);
     /*
      * now we can initialise the page allocator
