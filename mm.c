@@ -48,7 +48,9 @@
  *  One bit per page of memory. Bit set => page is allocated.
  */
 
-static unsigned long *alloc_bitmap;
+unsigned long *alloc_bitmap;
+unsigned long alloc_bitmap_size;
+
 #define PAGES_PER_MAPWORD (sizeof(unsigned long) * 8)
 
 #define allocated_in_map(_pn) \
@@ -137,9 +139,6 @@ static chunk_head_t *free_head[FREELIST_SIZE];
 static chunk_head_t  free_tail[FREELIST_SIZE];
 #define FREELIST_EMPTY(_l) ((_l)->next == NULL)
 
-#define round_pgdown(_p)  ((_p)&PAGE_MASK)
-#define round_pgup(_p)    (((_p)+(PAGE_SIZE-1))&PAGE_MASK)
-
 /*
  * Initialise allocator, placing addresses [@min,@max] in free pool.
  * @min and @max are PHYSICAL addresses.
@@ -147,7 +146,7 @@ static chunk_head_t  free_tail[FREELIST_SIZE];
 static void init_page_allocator(unsigned long min, unsigned long max)
 {
     int i;
-    unsigned long range, bitmap_size;
+    unsigned long range;
     chunk_head_t *ch;
     chunk_tail_t *ct;
     for ( i = 0; i < FREELIST_SIZE; i++ )
@@ -161,14 +160,14 @@ static void init_page_allocator(unsigned long min, unsigned long max)
     max = round_pgdown(max);
 
     /* Allocate space for the allocation bitmap. */
-    bitmap_size  = (max+1) >> (PAGE_SHIFT+3);
-    bitmap_size  = round_pgup(bitmap_size);
+    alloc_bitmap_size  = (max + 1) >> (PAGE_SHIFT + 3);
+    alloc_bitmap_size  = round_pgup(alloc_bitmap_size);
     alloc_bitmap = (unsigned long *)to_virt(min);
-    min         += bitmap_size;
+    min         += alloc_bitmap_size;
     range        = max - min;
 
     /* All allocated by default. */
-    memset(alloc_bitmap, ~0, bitmap_size);
+    memset(alloc_bitmap, ~0, alloc_bitmap_size);
     /* Free up the memory we've been given to play with. */
     map_free(PHYS_PFN(min), range>>PAGE_SHIFT);
 
@@ -198,6 +197,8 @@ static void init_page_allocator(unsigned long min, unsigned long max)
         free_head[i]    = ch;
         ct->level       = i;
     }
+
+    alloc_bitmap_remap();
 }
 
 
